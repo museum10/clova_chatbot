@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>사내 챗봇</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --line: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --brand: #00a857;
+      --user: #e8f8ef;
+      --bot: #f3f4f6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .chat {
+      max-width: 900px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      background: var(--panel);
+      border-left: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+    }
+    .header {
+      border-bottom: 1px solid var(--line);
+      padding: 14px 16px;
+      font-weight: 700;
+    }
+    .messages {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+    }
+    .msg {
+      max-width: 80%;
+      border-radius: 12px;
+      padding: 10px 12px;
+      white-space: pre-wrap;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+    .msg.user { align-self: flex-end; background: var(--user); }
+    .msg.bot { align-self: flex-start; background: var(--bot); }
+    .msg.system { align-self: center; color: var(--muted); background: transparent; }
+    .input-wrap {
+      border-top: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      padding: 12px;
+    }
+    input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      font-size: 14px;
+      padding: 11px 12px;
+      outline: none;
+    }
+    button {
+      border: 0;
+      border-radius: 10px;
+      background: var(--brand);
+      color: #fff;
+      font-size: 14px;
+      padding: 0 16px;
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: .6;
+      cursor: default;
+    }
+  </style>
+</head>
+<body>
+  <main class="chat">
+    <div class="header">사내 챗봇</div>
+    <section id="messages" class="messages" aria-live="polite"></section>
+    <form id="chatForm" class="input-wrap">
+      <input id="q" type="text" placeholder="질문을 입력하세요" autocomplete="off" required />
+      <button id="sendBtn" type="submit">전송</button>
+    </form>
+  </main>
+
+  <script>
+    const messagesEl = document.getElementById("messages");
+    const formEl = document.getElementById("chatForm");
+    const inputEl = document.getElementById("q");
+    const sendBtnEl = document.getElementById("sendBtn");
+
+    const userId = (() => {
+      const key = "clova_web_user_id";
+      const saved = localStorage.getItem(key);
+      if (saved) return saved;
+      const id = "web-" + Math.random().toString(36).slice(2, 12);
+      localStorage.setItem(key, id);
+      return id;
+    })();
+
+    function addMessage(text, role) {
+      const el = document.createElement("div");
+      el.className = "msg " + role;
+      el.textContent = text;
+      messagesEl.appendChild(el);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function setLoading(on) {
+      inputEl.disabled = on;
+      sendBtnEl.disabled = on;
+    }
+
+    async function callChatApi(payload) {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || "API error");
+      }
+      return res.json();
+    }
+
+    async function loadWelcome() {
+      try {
+        const data = await callChatApi({ userId, event: "open" });
+        if (Array.isArray(data.answers) && data.answers.length) {
+          data.answers.forEach((a) => addMessage(a, "bot"));
+        }
+      } catch {
+        addMessage("환영 메시지를 불러오지 못했습니다.", "system");
+      }
+    }
+
+    formEl.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const text = inputEl.value.trim();
+      if (!text) return;
+
+      addMessage(text, "user");
+      inputEl.value = "";
+      setLoading(true);
+
+      try {
+        const data = await callChatApi({ userId, event: "send", text });
+        if (!Array.isArray(data.answers) || data.answers.length === 0) {
+          addMessage("답변을 받지 못했습니다.", "system");
+        } else {
+          data.answers.forEach((a) => addMessage(a, "bot"));
+        }
+      } catch {
+        addMessage("오류가 발생했습니다. 잠시 후 다시 시도해 주세요.", "system");
+      } finally {
+        setLoading(false);
+        inputEl.focus();
+      }
+    });
+
+    loadWelcome();
+    inputEl.focus();
+  </script>
+</body>
+</html>

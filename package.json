@@ -1,0 +1,9 @@
+﻿{
+  "name": "clova-chatbot-embed",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal CLOVA Chatbot web page + proxy API for iframe embedding",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
