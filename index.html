@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>사내 챗봇</title>
+  <title>Company Chatbot</title>
   <style>
     :root {
       --bg: #f5f7fb;
@@ -87,7 +87,7 @@
 </head>
 <body>
   <main class="chat">
-    <div class="header">사내 챗봇</div>
+    <div class="header">Company Chatbot</div>
     <section id="messages" class="messages" aria-live="polite"></section>
     <form id="chatForm" class="input-wrap">
       <input id="q" type="text" placeholder="질문을 입력하세요" autocomplete="off" required />
@@ -129,10 +129,18 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
+
       if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || "API error");
+        let detail = "";
+        try {
+          const d = await res.json();
+          detail = d && (d.error || JSON.stringify(d.detail || d));
+        } catch {
+          detail = await res.text();
+        }
+        throw new Error(`HTTP ${res.status} ${detail || "API error"}`);
       }
+
       return res.json();
     }
 
@@ -142,8 +150,8 @@
         if (Array.isArray(data.answers) && data.answers.length) {
           data.answers.forEach((a) => addMessage(a, "bot"));
         }
-      } catch {
-        addMessage("환영 메시지를 불러오지 못했습니다.", "system");
+      } catch (err) {
+        addMessage("환영 메시지를 불러오지 못했습니다: " + err.message, "system");
       }
     }
 
@@ -163,8 +171,8 @@
         } else {
           data.answers.forEach((a) => addMessage(a, "bot"));
         }
-      } catch {
-        addMessage("오류가 발생했습니다. 잠시 후 다시 시도해 주세요.", "system");
+      } catch (err) {
+        addMessage("오류가 발생했습니다: " + err.message, "system");
       } finally {
         setLoading(false);
         inputEl.focus();

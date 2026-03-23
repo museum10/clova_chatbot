@@ -6,8 +6,8 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const apiUrl = process.env.CLOVA_API_URL;
-  const secretKey = process.env.CLOVA_SECRET_KEY;
+  const apiUrl = String(process.env.CLOVA_API_URL || "").trim();
+  const secretKey = String(process.env.CLOVA_SECRET_KEY || "").trim();
 
   if (!apiUrl || !secretKey) {
     res.status(500).json({ error: "Missing CLOVA_API_URL or CLOVA_SECRET_KEY" });
@@ -15,7 +15,11 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { userId, event, text } = req.body || {};
+    const parsedBody =
+      typeof req.body === "string"
+        ? JSON.parse(req.body || "{}")
+        : req.body || {};
+    const { userId, event, text } = parsedBody;
     const normalizedEvent = event === "open" ? "open" : "send";
 
     const requestBody = {
@@ -27,7 +31,7 @@ module.exports = async function handler(req, res) {
         {
           type: "text",
           data: {
-            description: normalizedEvent === "open" ? "open" : String(text || "")
+            description: normalizedEvent === "open" ? "" : String(text || "")
           }
         }
       ]
