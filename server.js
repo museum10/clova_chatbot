@@ -6,8 +6,8 @@ const crypto = require('crypto');
 loadEnv(path.join(__dirname, '.env'));
 
 const PORT = Number(process.env.PORT || 3000);
-const CLOVA_API_URL = process.env.CLOVA_API_URL;
-const CLOVA_SECRET_KEY = process.env.CLOVA_SECRET_KEY;
+const CLOVA_API_URL = process.env.https://6w62cndbwa.apigw.ntruss.com/custom/v1/18682/a1749236fb24ba879695b7821e99f648b89d4d5f78396e45d7095b49de90e0c6;
+const CLOVA_SECRET_KEY = process.env.T0RaVmxGV0hFSkhnbWhUUXBZakRZdXdKWWNmS0hXdXo=;
 
 if (!CLOVA_API_URL || !CLOVA_SECRET_KEY) {
   console.error('Missing CLOVA_API_URL or CLOVA_SECRET_KEY. Set them in .env');
