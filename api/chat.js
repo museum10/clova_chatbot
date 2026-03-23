@@ -27,14 +27,17 @@ module.exports = async function handler(req, res) {
       userId: String(userId || `web-${Date.now()}`),
       timestamp: Date.now(),
       event: normalizedEvent,
-      bubbles: [
-        {
-          type: "text",
-          data: {
-            description: normalizedEvent === "open" ? "" : String(text || "")
-          }
-        }
-      ]
+      bubbles:
+        normalizedEvent === "open"
+          ? []
+          : [
+              {
+                type: "text",
+                data: {
+                  description: String(text || "")
+                }
+              }
+            ]
     };
 
     const bodyString = JSON.stringify(requestBody);
@@ -70,6 +73,7 @@ module.exports = async function handler(req, res) {
 
     res.status(200).json({ answers: extractAnswers(data) });
   } catch (err) {
+    console.error("api/chat error:", err);
     res.status(500).json({ error: "Internal server error", detail: String(err.message || err) });
   }
 };
